@@ -6,6 +6,7 @@ package wumpusworld;
  * 
  * @author Johan Hagelbäck
  */
+
 public class MyAgent implements Agent
 {
     private World w;
@@ -28,6 +29,8 @@ public class MyAgent implements Agent
         //Location of the player
         int cX = w.getPlayerX();
         int cY = w.getPlayerY();
+        int prevX = w.getPrevPlayerPositionX();
+        int prevY = w.getPrevPlayerPositionY();
         
         //Basic action:
         //Grab Gold if we can.
@@ -75,6 +78,36 @@ public class MyAgent implements Agent
             System.out.println("I am facing Down");
         }
         
+        if(w.hasBreeze(cX, cY))
+        {
+            if(w.isValidPosition(cX + 1, cY))
+                if(w.isUnknown(cX + 1, cY))
+                    return;
+            if(w.isValidPosition(cX - 1, cY))
+                if(w.isUnknown(cX - 1, cY))
+                    return;
+            if(w.isValidPosition(cX, cY + 1))
+                if(w.isUnknown(cX, cY + 1))
+                    return;
+            if(w.isValidPosition(cX, cY - 1))
+                if(w.isUnknown(cX, cY - 1))
+                    return;
+        }
+        
+        
+        if(explore(cX, cY + 1, World.DIR_UP))
+            return;
+        
+        if(explore(cX, cY - 1, World.DIR_DOWN))
+            return;
+        
+        if(explore(cX + 1, cY, World.DIR_RIGHT))
+            return;
+        
+        if(explore(cX - 1, cY, World.DIR_LEFT))
+            return;
+        
+        
         //Random move actions
         int rnd = (int)(Math.random() * 5);
         if (rnd == 0) 
@@ -93,4 +126,85 @@ public class MyAgent implements Agent
             return;
         }
     }
+    private boolean explore(int p_X, int p_Y, int p_Dir)
+    {
+        if(w.isValidPosition(p_X, p_Y))
+            if(w.isUnknown(p_X, p_Y))
+                if(move(p_Dir))
+                    return true;
+        
+        return false;
+    }
+    
+    private boolean move(int p_Dir)
+    {
+        if(w.getDirection() == p_Dir)
+        {
+            w.doAction(World.A_MOVE);
+            return true;
+        }
+        else
+        {
+           switch(p_Dir)
+           {
+                case World.DIR_UP:
+                    switch(w.getDirection())
+                    {
+                         case World.DIR_LEFT:
+                            w.doAction(World.A_TURN_RIGHT);
+                            return true;
+                        case World.DIR_RIGHT:
+                            w.doAction(World.A_TURN_LEFT);
+                            return true;
+                        default:
+                            w.doAction(World.A_TURN_LEFT);
+                            return true;
+                    }
+                case World.DIR_DOWN:
+                    switch(w.getDirection())
+                    {
+                        case World.DIR_LEFT:
+                            w.doAction(World.A_TURN_LEFT);
+                            return true;
+                        case World.DIR_RIGHT:
+                            w.doAction(World.A_TURN_RIGHT);
+                            return true;
+                        default:
+                            w.doAction(World.A_TURN_LEFT);
+                            return true;
+                    }
+                case World.DIR_LEFT:
+                    switch(w.getDirection())
+                    {
+                        case World.DIR_UP:
+                            w.doAction(World.A_TURN_LEFT);
+                            return true;
+                        case World.DIR_DOWN:
+                            w.doAction(World.A_TURN_RIGHT);
+                            return true;
+                        default:
+                            w.doAction(World.A_TURN_LEFT);
+                            return true;
+                    }
+                case World.DIR_RIGHT:
+                    switch(w.getDirection())
+                    {
+                        case World.DIR_UP:
+                            w.doAction(World.A_TURN_RIGHT);
+                            return true;
+                        case World.DIR_DOWN:
+                            w.doAction(World.A_TURN_LEFT);
+                            return true;
+                        default:
+                            w.doAction(World.A_TURN_LEFT);
+                            return true;
+                    }
+           }   
+        }
+        return false;
+    }
+    
 }
+
+
+

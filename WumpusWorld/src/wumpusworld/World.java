@@ -15,6 +15,8 @@ public class World
     private String[][] w;
     private int pX = 1;
     private int pY = 1;
+    private int prev_pX = 1;
+    private int prev_pY = 1;
     private boolean wumpusAlive = true;
     private boolean hasArrow = true;
     private boolean isInPit = false;
@@ -552,7 +554,8 @@ public class World
         {
             return false;
         }
-        
+        prev_pX = pX;
+        prev_pY = pY;
         pX = nX;
         pY = nY;
         
@@ -570,5 +573,14 @@ public class World
         }
         
         return true;    
+    }
+    
+    public int getPrevPlayerPositionX()
+    {
+        return prev_pX;
+    }
+    public int getPrevPlayerPositionY()
+    {
+        return prev_pY;
     }
 }
