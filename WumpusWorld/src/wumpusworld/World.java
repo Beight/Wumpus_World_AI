@@ -183,12 +183,12 @@ public class World
      * @param y Y position
      * @return True if the square has a breeze
      */
-    public boolean hasBreeze(int x, int y)
+    public boolean hasBreeze(Position p_Pos)
     {
-        if (!isValidPosition(x,y)) return false;
-        if (isUnknown(x,y)) return false;
+        if (!isValidPosition(p_Pos)) return false;
+        if (isUnknown(p_Pos)) return false;
         
-        if (w[x][y].contains(BREEZE))
+        if (w[p_Pos.X][p_Pos.Y].contains(BREEZE))
             return true;
         else
             return false;
@@ -199,16 +199,15 @@ public class World
      * if the position is invalid, or if the square is
      * unknown.
      * 
-     * @param x X position
-     * @param y Y position
+     * @param p_Pos position
      * @return True if the square has a stench
      */
-    public boolean hasStench(int x, int y)
+    public boolean hasStench(Position p_Pos)
     {
-        if (!isValidPosition(x,y)) return false;
-        if (isUnknown(x,y)) return false;
+        if (!isValidPosition(p_Pos)) return false;
+        if (isUnknown(p_Pos)) return false;
         
-        if (w[x][y].contains(STENCH))
+        if (w[p_Pos.X][p_Pos.Y].contains(STENCH))
             return true;
         else
             return false;
@@ -219,16 +218,15 @@ public class World
      * if the position is invalid, or if the square is
      * unknown.
      * 
-     * @param x X position
-     * @param y Y position
+     * @param p_Pos X position
      * @return True if the square has glitter
      */
-    public boolean hasGlitter(int x, int y)
+    public boolean hasGlitter(Position p_Pos)
     {
-        if (!isValidPosition(x,y)) return false;
-        if (isUnknown(x,y)) return false;
+        if (!isValidPosition(p_Pos)) return false;
+        if (isUnknown(p_Pos)) return false;
         
-        if (w[x][y].contains(GLITTER))
+        if (w[p_Pos.X][p_Pos.Y].contains(GLITTER))
             return true;
         else
             return false;
@@ -239,16 +237,15 @@ public class World
      * if the position is invalid, or if the square is
      * unknown.
      * 
-     * @param x X position
-     * @param y Y position
+     * @param p_Pos position
      * @return True if the square has a pit
      */
-    public boolean hasPit(int x, int y)
+    public boolean hasPit(Position p_Pos)
     {
-        if (!isValidPosition(x,y)) return false;
-        if (isUnknown(x,y)) return false;
+        if (!isValidPosition(p_Pos)) return false;
+        if (isUnknown(p_Pos)) return false;
         
-        if (w[x][y].contains(PIT))
+        if (w[p_Pos.X][p_Pos.Y].contains(PIT))
             return true;
         else
             return false;
@@ -259,16 +256,15 @@ public class World
      * if the position is invalid, or if the square is
      * unknown.
      * 
-     * @param x X position
-     * @param y Y position
+     * @param p_Pos position
      * @return True if the Wumpus is in the square
      */
-    public boolean hasWumpus(int x, int y)
+    public boolean hasWumpus(Position p_Pos)
     {
-        if (!isValidPosition(x,y)) return false;
-        if (isUnknown(x,y)) return false;
+        if (!isValidPosition(p_Pos)) return false;
+        if (isUnknown(p_Pos)) return false;
         
-        if (w[x][y].contains(WUMPUS))
+        if (w[p_Pos.X][p_Pos.Y].contains(WUMPUS))
             return true;
         else
             return false;
@@ -277,13 +273,12 @@ public class World
      /**
      * Checks if the player is in a square.
      * 
-     * @param x X position
-     * @param y Y position
+     * @param p_Pos position
      * @return True if the player is in the square
      */
-    public boolean hasPlayer(int x, int y)
+    public boolean hasPlayer(Position p_Pos)
     {
-        if (pX == x && pY == y)
+        if (pX == p_Pos.X && pY == p_Pos.Y)
         {
             return true;
         }
@@ -294,30 +289,28 @@ public class World
      * Checks if a square is visited. Returns false
      * if the position is invalid.
      * 
-     * @param x X position
-     * @param y Y position
+     * @param p_Pos position
      * @return True if the square is visited
      */
-    public boolean isVisited(int x, int y)
+    public boolean isVisited(Position p_Pos)
     {
-        if (!isValidPosition(x,y)) return false;
+        if (!isValidPosition(p_Pos)) return false;
         
-        return !isUnknown(x, y);
+        return !isUnknown(p_Pos);
     }
     
     /**
      * Checks if a square is unknown. Returns false
      * if the position is invalid.
      * 
-     * @param x X position
-     * @param y Y position
+     * @param p_Pos position
      * @return True if the square is unknown
      */
-    public boolean isUnknown(int x, int y)
+    public boolean isUnknown(Position p_Pos)
     {
-        if (!isValidPosition(x,y)) return false;
+        if (!isValidPosition(p_Pos)) return false;
         
-        if (w[x][y].contains(UNKNOWN))
+        if (w[p_Pos.X][p_Pos.Y].contains(UNKNOWN))
             return true;
         else
             return false;  
@@ -327,16 +320,15 @@ public class World
      * Checks if a square is valid, i.e. inside
      * the bounds of the game world.
      * 
-     * @param x X position
-     * @param y Y position
+     * @param p_Pos position
      * @return True if the square is valid
      */
-    public boolean isValidPosition(int x, int y)
+    public boolean isValidPosition(Position p_Pos)
     {
-        if (x < 1) return false;
-        if (y < 1) return false;
-        if (x > size) return false;
-        if (y > size) return false;
+        if (p_Pos.X < 1) return false;
+        if (p_Pos.Y < 1) return false;
+        if (p_Pos.X > size) return false;
+        if (p_Pos.Y > size) return false;
         return true;
     }
     
@@ -349,7 +341,7 @@ public class World
      */
     private void append(int x, int y, String s)
     {
-        if (!isValidPosition(x,y))
+        if (!isValidPosition(new Position(x,y)))
             return;
         
         if (!w[x][y].contains(s))
@@ -459,7 +451,7 @@ public class World
         }
         if (a.equals(A_GRAB))
         {
-            if (hasGlitter(pX,pY))
+            if (hasGlitter(new Position(pX,pY)))
             {
                 w[pX][pY] = w[pX][pY].replaceAll(GLITTER, "");
                 score += 1000;
@@ -550,7 +542,8 @@ public class World
     private boolean move(int nX, int nY)
     {
         //Check if valid
-        if (!isValidPosition(nX, nY))
+        Position p = new Position(nX, nY);
+        if (!isValidPosition(p))
         {
             return false;
         }
@@ -561,12 +554,12 @@ public class World
         
         setVisited(pX, pY);
         
-        if(hasWumpus(pX,pY))
+        if(hasWumpus(p))
         {
             score -= 1000;
             gameOver = true;
         }
-        if (hasPit(pX,pY))
+        if (hasPit(p))
         {
             score -= 1000;
             isInPit = true;

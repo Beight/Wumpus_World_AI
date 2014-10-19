@@ -111,7 +111,7 @@ public class GUI implements ActionListener
     private void createWindow()
     {
         frame = new JFrame("Wumpus World");
-        frame.setSize(820, 640);
+        frame.setSize(1024, 728);
         frame.getContentPane().setLayout(new FlowLayout());
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         
@@ -282,34 +282,34 @@ public class GUI implements ActionListener
             {
                 blocks[i][j].removeAll();
                 blocks[i][j].setBackground(Color.WHITE);
-                if (w.hasPit(i+1, j+1))
+                if (w.hasPit(new Position(i+1, j+1)))
                 {
                     blocks[i][j].add(new JLabel(l_pit));
                 }
-                if (w.hasBreeze(i+1, j+1))
+                if (w.hasBreeze(new Position(i+1, j+1)))
                 {
                     blocks[i][j].add(new JLabel(l_breeze));
                 }
-                if (w.hasStench(i+1, j+1))
+                if (w.hasStench(new Position(i+1, j+1)))
                 {
                     blocks[i][j].add(new JLabel(l_stench));
                 }
-                if (w.hasWumpus(i+1, j+1))
+                if (w.hasWumpus(new Position(i+1, j+1)))
                 {
                     blocks[i][j].add(new JLabel(l_wumpus));
                 }
-                if (w.hasGlitter(i+1, j+1))
+                if (w.hasGlitter(new Position(i+1, j+1)))
                 {
                     blocks[i][j].add(new JLabel(l_glitter));
                 }
-                if (w.hasPlayer(i+1, j+1))
+                if (w.hasPlayer(new Position(i+1, j+1)))
                 {
                     if (w.getDirection() == World.DIR_DOWN) blocks[i][j].add(new JLabel(l_player_down));
                     if (w.getDirection() == World.DIR_UP) blocks[i][j].add(new JLabel(l_player_up));
                     if (w.getDirection() == World.DIR_LEFT) blocks[i][j].add(new JLabel(l_player_left));
                     if (w.getDirection() == World.DIR_RIGHT) blocks[i][j].add(new JLabel(l_player_right));
                 }
-                if (w.isUnknown(i+1, j+1))
+                if (w.isUnknown(new Position(i+1, j+1)))
                 {
                     blocks[i][j].setBackground(Color.GRAY);
                 }
