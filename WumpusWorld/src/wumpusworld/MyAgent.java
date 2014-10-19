@@ -303,6 +303,7 @@ public class MyAgent implements Agent
                     availableDir.add(World.DIR_DOWN);
             
             
+            
             availableDir.add(w.getDirection());
 
             if(!availableDir.isEmpty())
