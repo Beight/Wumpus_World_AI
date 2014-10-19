@@ -16,6 +16,8 @@ public class MyAgent implements Agent
     private ArrayList<Position> m_Pits; //Can include potetial pits to.
     private ArrayList<Position> m_MoveQueue;
     private Position m_WumpusPos;
+    int deadend = 0;
+    int turns = 0;
     /**
      * Creates a new instance of your solver agent.
      * 
@@ -45,6 +47,8 @@ public class MyAgent implements Agent
         
         
         
+        
+        
         //Basic action:
         //Grab Gold if we can.
         if (w.hasGlitter(pos))
@@ -70,15 +74,19 @@ public class MyAgent implements Agent
                 
             //int nrOfBreezes = checkIfPit(new Position(cX, cY));
             
-            addPit(new Position(cX + 1, cY));
-            addPit(new Position(cX - 1, cY));
-            addPit(new Position(cX, cY + 1));
-            addPit(new Position(cX, cY - 1));
+            addPit(pos.up());
+            addPit(pos.down());
+            addPit(pos.right());
+            addPit(pos.left());
             System.out.println("I am in a Breeze");
         }
         if (w.hasStench(pos))
         {
-            m_Stenches.add(new Position(cX, cY));
+            addPit(pos.up());
+            addPit(pos.down());
+            addPit(pos.right());
+            addPit(pos.left());
+            
             System.out.println("I am in a Stench");
         }
         if (w.hasPit(pos))
@@ -112,7 +120,18 @@ public class MyAgent implements Agent
                 m_MoveQueue.remove(0);
             
         if(explore(pos))
+        {
+            Position nPos = new Position(w.getPlayerX(), w.getPlayerY());
+            
+            
+            for(int i = 0; i < m_Pits.size(); i++)
+            {
+                if(Position.equals(m_Pits.get(i), nPos))
+                    if(!w.hasPit(nPos))
+                        m_Pits.remove(i);
+            }
             return;
+        }
         
         
         
@@ -138,34 +157,24 @@ public class MyAgent implements Agent
     {
         if(m_MoveQueue.isEmpty())
         {
-            ArrayList<Position> availableMoves = new ArrayList<>();
-
-            if(w.isUnknown(p_Pos.up()))
-                if(!checkIfPit(p_Pos.up()))
-                    availableMoves.add(p_Pos.up());
-
-            if(w.isUnknown(p_Pos.right()))
-                if(!checkIfPit(p_Pos.right()))
-                    availableMoves.add(p_Pos.right());
-
-            if(w.isUnknown(p_Pos.left()))
-                if(!checkIfPit(p_Pos.left()))
-                    availableMoves.add(p_Pos.left());
-
-            if(w.isUnknown(p_Pos.down()))
-                if(!checkIfPit(p_Pos.down()))
-                    availableMoves.add(p_Pos.down());
-
-            if(!availableMoves.isEmpty())
+            int i = 0;
+            while(i < 5000)
             {
-                int rand = randInt(0, availableMoves.size() - 1);
-                System.out.println("Getting a new destination");
-                m_MoveQueue.add(availableMoves.get(rand));
+                Position dest = new Position(randInt(1, 4), randInt(1, 4));
+                if(w.isUnknown(dest))
+                {
+                    m_MoveQueue.add(dest);
+                    break;
+                }
+                i++;
             }
-            else 
+            
+            if(!m_MoveQueue.isEmpty())
             {
-                
+                System.out.println("Getting a new destination. Heading to X:" + m_MoveQueue.get(0).X + " Y: " + m_MoveQueue.get(0).Y);
             }
+            else return false;
+            
         }
         
         int dir = calcDir(p_Pos, m_MoveQueue.get(0));
@@ -250,14 +259,63 @@ public class MyAgent implements Agent
     
     private int calcDir(Position p_PlayerPos, Position p_Destination)
     {
+        ArrayList<Integer> availableDir = new ArrayList<>();
+        Position prevPos  = new Position(w.getPrevPlayerPositionX(), w.getPrevPlayerPositionY());
         if(p_PlayerPos.X > p_Destination.X)
-            return World.DIR_LEFT;
+            if(!checkIfPit(p_PlayerPos.left()))
+                if(!Position.equals(prevPos, p_PlayerPos.left()))
+                    availableDir.add(World.DIR_LEFT);
+        
         if(p_PlayerPos.X < p_Destination.X)
-            return World.DIR_RIGHT;
+            if(!checkIfPit(p_PlayerPos.right()))
+                if(!Position.equals(prevPos, p_PlayerPos.right()))
+                    availableDir.add(World.DIR_RIGHT);
+        
         if(p_PlayerPos.Y < p_Destination.Y)
-            return World.DIR_UP;
+            if(!checkIfPit(p_PlayerPos.up()))
+                if(!Position.equals(prevPos, p_PlayerPos.up()))
+                    availableDir.add(World.DIR_UP);
+        
+        if(p_PlayerPos.Y > p_Destination.Y)
+            if(!checkIfPit(p_PlayerPos.down()))
+                if(!Position.equals(prevPos, p_PlayerPos.down()))
+                    availableDir.add(World.DIR_DOWN);
+        
+        if(!availableDir.isEmpty())
+            return availableDir.get(randInt(0, availableDir.size() - 1));
         else
-            return World.DIR_DOWN;
+        {
+            
+            if(w.isVisited(p_PlayerPos.left()))
+                if(!checkIfPit(p_PlayerPos.left()))
+                    availableDir.add(World.DIR_LEFT);
+
+            if(w.isVisited(p_PlayerPos.right()))
+                if(!checkIfPit(p_PlayerPos.right()))
+                    availableDir.add(World.DIR_RIGHT);
+
+            if(w.isVisited(p_PlayerPos.up()))
+                if(!checkIfPit(p_PlayerPos.up()))
+                    availableDir.add(World.DIR_UP);
+
+            if(w.isVisited(p_PlayerPos.down()))
+                if(!checkIfPit(p_PlayerPos.down()))
+                    availableDir.add(World.DIR_DOWN);
+            
+            
+            availableDir.add(w.getDirection());
+
+            if(!availableDir.isEmpty())
+                return availableDir.get(randInt(0, availableDir.size() - 1));
+            else
+            {
+                System.out.println("Can't find a direction!");
+                return World.DIR_UP;
+            }
+        }
+        
+        
+        
     }
     
     private void addBreeze(Position p_Pos)
@@ -273,19 +331,16 @@ public class MyAgent implements Agent
     
     private void addPit(Position p_Pos)
     {
-            if(w.isValidPosition(p_Pos))
-            {
-                if(w.isUnknown(p_Pos))
-                {
-                    boolean saved = false;
-                    for(Position p : m_Pits)
-                        if(Position.equals(p, p_Pos))
-                            saved = true;
-                    
-                    if(!saved)
-                        m_Pits.add(p_Pos);
-                }
-            }
+        if(w.isUnknown(p_Pos))
+        {
+            boolean saved = false;
+            for(Position p : m_Pits)
+                if(Position.equals(p, p_Pos))
+                    saved = true;
+
+            if(!saved)
+                m_Pits.add(p_Pos);
+        }
     }
     
     private boolean checkIfPit(Position p_Pos)
@@ -300,20 +355,17 @@ public class MyAgent implements Agent
     private int addUnknownPit(Position p_Pos)
     {
                 int nrOfBreezes = 1;
-        if(w.isValidPosition(p_Pos.DiagonalRightUp()))
-            if(w.isVisited(p_Pos.DiagonalRightUp()))
-                if(w.hasBreeze(p_Pos.DiagonalRightUp()))
-                    nrOfBreezes++;
+        if(w.isVisited(p_Pos.DiagonalRightUp()))
+            if(w.hasBreeze(p_Pos.DiagonalRightUp()))
+                nrOfBreezes++;
         
-        if(w.isValidPosition(p_Pos.DiagonalRightDown()))
-            if(w.isVisited(p_Pos.DiagonalRightDown()))
-                if(w.hasBreeze(p_Pos.DiagonalRightDown()))
-                    nrOfBreezes++;
+        if(w.isVisited(p_Pos.DiagonalRightDown()))
+            if(w.hasBreeze(p_Pos.DiagonalRightDown()))
+                nrOfBreezes++;
         
-        if(w.isValidPosition(p_Pos.rightAcross()))
-            if(w.isVisited(p_Pos.rightAcross()))
-                if(w.hasBreeze(p_Pos.rightAcross()))
-                    nrOfBreezes++;
+        if(w.isVisited(p_Pos.rightAcross()))
+            if(w.hasBreeze(p_Pos.rightAcross()))
+                nrOfBreezes++;
         
         return nrOfBreezes;
     }
