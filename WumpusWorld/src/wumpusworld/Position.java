@@ -18,14 +18,22 @@ public class Position {
         X = p_X;
         Y = p_Y;
     }
-    
-    public static boolean equals(Position p_Pos1, Position p_Pos2)
+    @Override
+    public boolean equals(Object o)
     {
-        if(p_Pos1.X == p_Pos2.X)
-            if(p_Pos1.Y == p_Pos2.Y)
-                return true;
-        
-        return false;
+        Position p = (Position)o;
+        if(X == p.X && Y == p.Y)
+            return true;
+        else
+            return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 17 * hash + this.X;
+        hash = 17 * hash + this.Y;
+        return hash;
     }
     
     public Position up()

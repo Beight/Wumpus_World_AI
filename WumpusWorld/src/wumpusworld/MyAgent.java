@@ -13,6 +13,7 @@ public class MyAgent implements Agent
     private World w;
     private ArrayList<Position> m_Breezes;
     private ArrayList<Position> m_Stenches;
+    private ArrayList<Position> m_PotentialWumpus;
     private ArrayList<Position> m_Pits; //Can include potetial pits to.
     private ArrayList<Position> m_MoveQueue;
     private Position m_WumpusPos;
@@ -28,6 +29,7 @@ public class MyAgent implements Agent
         m_Breezes = new ArrayList<>();
         m_Stenches = new ArrayList<>();
         m_Pits = new ArrayList<>();
+        m_PotentialWumpus = new ArrayList<>();
         m_WumpusPos = new Position(-1, -1);
         m_MoveQueue = new ArrayList<>();
         w = world;
@@ -68,24 +70,43 @@ public class MyAgent implements Agent
         //Test the environment
         if (w.hasBreeze(pos))
         {
-            addBreeze(pos);
-            //if(w.isVisited(cX + 1, cY))
-                
-                
-            //int nrOfBreezes = checkIfPit(new Position(cX, cY));
+            if(!m_Breezes.contains(pos))
+                m_Breezes.add(pos);
             
-            addPit(pos.up());
-            addPit(pos.down());
-            addPit(pos.right());
-            addPit(pos.left());
+            addPits(pos);
             System.out.println("I am in a Breeze");
         }
         if (w.hasStench(pos))
         {
-            addPit(pos.up());
-            addPit(pos.down());
-            addPit(pos.right());
-            addPit(pos.left());
+            if(m_Stenches.size() > 1)
+            {
+                int wumpusDir = locateWumpus(pos);
+                if(wumpusDir > -1)
+                {
+                    if(wumpusDir == w.getDirection())
+                    {
+                        w.doAction(w.A_SHOOT);
+                        if(!w.hasStench(pos))
+                        {
+                            m_PotentialWumpus.clear();
+                            m_Stenches.clear();
+                        }
+                        return;
+                    }
+                    else
+                    {
+                        move(wumpusDir);
+                        return;
+                    }
+                }
+            }
+                
+                
+                
+            if(!m_Stenches.contains(pos))
+                m_Stenches.add(pos);
+            
+            addWumpus(pos);
             
             System.out.println("I am in a Stench");
         }
@@ -116,7 +137,7 @@ public class MyAgent implements Agent
         //TODO: Save number of valid moves and also save the positions for those moves and make a decision on what to do out of those moves.
         
         if(!m_MoveQueue.isEmpty())
-            if(Position.equals(m_MoveQueue.get(0), pos))
+            if(pos.equals(m_MoveQueue.get(0)))
                 m_MoveQueue.remove(0);
             
         if(explore(pos))
@@ -126,7 +147,7 @@ public class MyAgent implements Agent
             
             for(int i = 0; i < m_Pits.size(); i++)
             {
-                if(Position.equals(m_Pits.get(i), nPos))
+                if(nPos.equals(m_Pits.get(i)))
                     if(!w.hasPit(nPos))
                         m_Pits.remove(i);
             }
@@ -136,6 +157,8 @@ public class MyAgent implements Agent
         
         
         //Random move actions
+         System.out.println("Doing a random move!");
+        
         int rnd = (int)(Math.random() * 5);
         if (rnd == 0) 
         {
@@ -262,23 +285,23 @@ public class MyAgent implements Agent
         ArrayList<Integer> availableDir = new ArrayList<>();
         Position prevPos  = new Position(w.getPrevPlayerPositionX(), w.getPrevPlayerPositionY());
         if(p_PlayerPos.X > p_Destination.X)
-            if(!checkIfPit(p_PlayerPos.left()))
-                if(!Position.equals(prevPos, p_PlayerPos.left()))
+            if(!checkIfHazard(p_PlayerPos.left()))
+                if(!prevPos.equals(p_PlayerPos.left()))
                     availableDir.add(World.DIR_LEFT);
         
         if(p_PlayerPos.X < p_Destination.X)
-            if(!checkIfPit(p_PlayerPos.right()))
-                if(!Position.equals(prevPos, p_PlayerPos.right()))
+            if(!checkIfHazard(p_PlayerPos.right()))
+                if(!prevPos.equals(p_PlayerPos.right()))
                     availableDir.add(World.DIR_RIGHT);
         
         if(p_PlayerPos.Y < p_Destination.Y)
-            if(!checkIfPit(p_PlayerPos.up()))
-                if(!Position.equals(prevPos, p_PlayerPos.up()))
+            if(!checkIfHazard(p_PlayerPos.up()))
+                if(!prevPos.equals(p_PlayerPos.up()))
                     availableDir.add(World.DIR_UP);
         
         if(p_PlayerPos.Y > p_Destination.Y)
-            if(!checkIfPit(p_PlayerPos.down()))
-                if(!Position.equals(prevPos, p_PlayerPos.down()))
+            if(!checkIfHazard(p_PlayerPos.down()))
+                if(!prevPos.equals(p_PlayerPos.down()))
                     availableDir.add(World.DIR_DOWN);
         
         if(!availableDir.isEmpty())
@@ -287,24 +310,17 @@ public class MyAgent implements Agent
         {
             
             if(w.isVisited(p_PlayerPos.left()))
-                if(!checkIfPit(p_PlayerPos.left()))
-                    availableDir.add(World.DIR_LEFT);
-
+                availableDir.add(World.DIR_LEFT);
             if(w.isVisited(p_PlayerPos.right()))
-                if(!checkIfPit(p_PlayerPos.right()))
-                    availableDir.add(World.DIR_RIGHT);
-
+                availableDir.add(World.DIR_RIGHT);
             if(w.isVisited(p_PlayerPos.up()))
-                if(!checkIfPit(p_PlayerPos.up()))
-                    availableDir.add(World.DIR_UP);
-
+                availableDir.add(World.DIR_UP);
             if(w.isVisited(p_PlayerPos.down()))
-                if(!checkIfPit(p_PlayerPos.down()))
-                    availableDir.add(World.DIR_DOWN);
+                availableDir.add(World.DIR_DOWN);
             
             
             
-            availableDir.add(w.getDirection());
+            //availableDir.add(w.getDirection());
 
             if(!availableDir.isEmpty())
                 return availableDir.get(randInt(0, availableDir.size() - 1));
@@ -319,35 +335,59 @@ public class MyAgent implements Agent
         
     }
     
-    private void addBreeze(Position p_Pos)
+    private void addPits(Position p_Pos)
     {
-        boolean saved = false;
-        for(Position p : m_Breezes)
-            if(Position.equals(p, p_Pos))
-                saved = true;
-
-        if(!saved)
-            m_Breezes.add(p_Pos);
-    }
-    
-    private void addPit(Position p_Pos)
-    {
-        if(w.isUnknown(p_Pos))
+        if(w.isUnknown(p_Pos.up()))
         {
-            boolean saved = false;
-            for(Position p : m_Pits)
-                if(Position.equals(p, p_Pos))
-                    saved = true;
+            if(!m_Pits.contains(p_Pos.up()))
+                m_Pits.add(p_Pos.up());
+        }
+        if(w.isUnknown(p_Pos.down()))
+        {
+            if(!m_Pits.contains(p_Pos.down()))
+                m_Pits.add(p_Pos.down());
+        }
+        if(w.isUnknown(p_Pos.left()))
+        {
+            if(!m_Pits.contains(p_Pos.left()))
+                m_Pits.add(p_Pos.left());
+        }
+        if(w.isUnknown(p_Pos.right()))
+        {
+            if(!m_Pits.contains(p_Pos.right()))
+                m_Pits.add(p_Pos.right());
+        }
+    }
 
-            if(!saved)
-                m_Pits.add(p_Pos);
+    private void addWumpus(Position p_Pos)
+    {
+        if(w.isUnknown(p_Pos.up()))
+        {
+            if(!m_PotentialWumpus.contains(p_Pos.up()))
+                m_PotentialWumpus.add(p_Pos.up());
+        }
+        if(w.isUnknown(p_Pos.down()))
+        {
+            if(!m_PotentialWumpus.contains(p_Pos.down()))
+                m_PotentialWumpus.add(p_Pos.down());
+        }
+        if(w.isUnknown(p_Pos.left()))
+        {
+            if(!m_PotentialWumpus.contains(p_Pos.left()))
+                m_PotentialWumpus.add(p_Pos.left());
+        }
+        if(w.isUnknown(p_Pos.right()))
+        {
+            if(!m_PotentialWumpus.contains(p_Pos.right()))
+                m_PotentialWumpus.add(p_Pos.right());
         }
     }
     
-    private boolean checkIfPit(Position p_Pos)
+    private boolean checkIfHazard(Position p_Pos)
     {
-        for(Position p : m_Pits)
-            if(Position.equals(p, p_Pos))
+        if(m_Pits.contains(p_Pos))
+               return true;
+        if(m_PotentialWumpus.contains(p_Pos))
                return true;
                 
         return false;
@@ -369,6 +409,34 @@ public class MyAgent implements Agent
                 nrOfBreezes++;
         
         return nrOfBreezes;
+    }
+    
+    private int locateWumpus(Position p_Pos)
+    {
+        for(Position p : m_PotentialWumpus)
+        {
+            if(p_Pos.equals(p.right()))
+            {
+                m_WumpusPos = p;
+                return World.DIR_LEFT;
+            }
+            if(p_Pos.equals(p.left()))
+            {
+                m_WumpusPos = p;
+                return World.DIR_RIGHT;
+            }
+            if(p_Pos.equals(p.up()))
+            {
+                m_WumpusPos = p;
+                return World.DIR_DOWN;
+            }
+            if(p_Pos.equals(p.down()))
+            {
+                m_WumpusPos = p;
+                return World.DIR_UP;
+            }
+        }
+        return -1;
     }
     
     
