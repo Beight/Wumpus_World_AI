@@ -19,6 +19,7 @@ public class MyAgent implements Agent
     private ArrayList<Position> m_MoveQueue;
     private Position m_WumpusPos;
     private ArrayList<Position> m_PrevPos;
+    private boolean force = false;
     int turns = 0;
     /**
      * Creates a new instance of your solver agent.
@@ -47,7 +48,6 @@ public class MyAgent implements Agent
         Position pos = new Position(w.getPlayerX(), w.getPlayerY());
         m_PrevPos.add(new Position(w.getPrevPlayerPositionX(), w.getPrevPlayerPositionY()));
         
-        
         updatePits();
         updateWumpus();
         
@@ -71,17 +71,20 @@ public class MyAgent implements Agent
         //Test the environment
         if (w.hasBreeze(pos))
         {
+            //If we have found a new breeze save it to the list and 
+            //add potential pits around it.
             if(!m_Breezes.contains(pos))
             {
                 m_Breezes.add(pos);
                 addPits(pos);
             }
             
-            
             System.out.println("I am in a Breeze");
         }
         if (w.hasStench(pos))
         {
+            //If we have found a new stench add it to the list
+            //and add potential wumpus locations around it.
             if(!m_Stenches.contains(pos))
             {
                 m_Stenches.add(pos);
@@ -140,20 +143,18 @@ public class MyAgent implements Agent
         
         
         
-        //TODO: Save number of valid moves and also save the positions for those moves and make a decision on what to do out of those moves.
-        
+        //If we have reached our destination or spent to many turns looking for it
+        //remove it from the list so we can get a new one.
         if(!m_MoveQueue.isEmpty())
             if(pos.equals(m_MoveQueue.get(0)) || turns > 8)
             {
                 turns = 0;
                 m_MoveQueue.remove(0);
+                m_PrevPos.clear();
             }
             
         if(explore(pos))
-        {
-            turns++;
             return;
-        }
         
         
         
@@ -200,20 +201,29 @@ public class MyAgent implements Agent
             {
                 System.out.println("Getting a new destination. Heading to X:" + m_MoveQueue.get(0).X + " Y: " + m_MoveQueue.get(0).Y);
             }
-            else return false;
+            else 
+            {
+                //If no safe destination are found set a potential pit as destination.
+                if(!m_PotentialPits.isEmpty())
+                    m_MoveQueue.add(m_PotentialPits.get(0));
+            }
             
         }
         
+        //Calculate which direction is needed to get to goal destination.
         int dir = calcDir(p_Pos, m_MoveQueue.get(0));
         
+        //No direction was found.
         if(dir == -1)
             return false;
-            
+        
+        //Move in the direction of the goal destination.
         if(move(dir))
             return true;
         
      
-        
+        //If this return statement is reached the move was invalid for some reason.
+        //If this occurs something is wrong with the calcDir method or move method.
         return false;
     }
     
@@ -222,6 +232,7 @@ public class MyAgent implements Agent
         if(w.getDirection() == p_Dir)
         {
             w.doAction(World.A_MOVE);
+            turns++;
             return true;
         }
         else
@@ -289,8 +300,9 @@ public class MyAgent implements Agent
     
     private int calcDir(Position p_PlayerPos, Position p_Destination)
     {
+        
         ArrayList<Integer> availableDir = new ArrayList<>();
-        Position prevPos  = new Position(w.getPrevPlayerPositionX(), w.getPrevPlayerPositionY());
+        Position prevPos = new Position(w.getPrevPlayerPositionX(), w.getPrevPlayerPositionY());
         if(p_PlayerPos.X > p_Destination.X)
             if(!checkIfPotentialHazard(p_PlayerPos.left()))
                 if(!prevPos.equals(p_PlayerPos.left()))
@@ -319,8 +331,7 @@ public class MyAgent implements Agent
                 return availableDir.get(randInt(0, availableDir.size() - 1));
         }
         else
-        {
-            
+        {    
             if(w.isVisited(p_PlayerPos.left()) && !checkIfPotentialHazard(p_PlayerPos.left()))
                 availableDir.add(World.DIR_LEFT);
             if(w.isVisited(p_PlayerPos.right()) && !checkIfPotentialHazard(p_PlayerPos.right()))
@@ -329,9 +340,7 @@ public class MyAgent implements Agent
                 availableDir.add(World.DIR_UP);
             if(w.isVisited(p_PlayerPos.down()) && !checkIfPotentialHazard(p_PlayerPos.down()))
                 availableDir.add(World.DIR_DOWN);
-            
-            
-            
+
             if(!availableDir.isEmpty())
             {
                 if(availableDir.contains(w.getDirection()))
@@ -341,15 +350,17 @@ public class MyAgent implements Agent
             }
             else
             {
-                if(!checkIfHazard(p_PlayerPos.left()))
+                if(m_PotentialPits.contains(p_PlayerPos.left()))
                     availableDir.add(World.DIR_LEFT);
-                if(!checkIfHazard(p_PlayerPos.right()))
+                if(m_PotentialPits.contains(p_PlayerPos.right()))
                     availableDir.add(World.DIR_RIGHT);
-                if(!checkIfHazard(p_PlayerPos.up()))
+                if(m_PotentialPits.contains(p_PlayerPos.up()))
                     availableDir.add(World.DIR_UP);
-                if(!checkIfHazard(p_PlayerPos.down()))
+                if(m_PotentialPits.contains(p_PlayerPos.down()))
                     availableDir.add(World.DIR_DOWN);
-                
+
+                force = false;
+
                 if(!availableDir.isEmpty())
                 {
                     System.out.println("Can't find a safe direction, taking a risk!");
@@ -365,10 +376,9 @@ public class MyAgent implements Agent
                 }
             }
         }
+    }   
         
-        
-        
-    }
+
     
     private void addPits(Position p_Pos)
     {
@@ -532,7 +542,7 @@ public class MyAgent implements Agent
                 m_Pits.add(p); 
             }
         }
-        //clear the
+
         for(int i = 0; i < m_Pits.size(); i++)
         {
             m_PotentialPits.remove(m_Pits.get(i));
