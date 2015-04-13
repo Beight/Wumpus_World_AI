@@ -17,10 +17,10 @@ public class MyAgent implements Agent
     private ArrayList<Position> m_Pits; //Can include potetial pits to.
     private ArrayList<Position> m_PotentialPits;
     private ArrayList<Position> m_MoveQueue;
-    private Position m_WumpusPos;
     private ArrayList<Position> m_PrevPos;
-    private boolean force = false;
-    int turns = 0;
+    private boolean first = true;
+    private int m_notReachDest = 0;
+    private int m_turns = 0;
     /**
      * Creates a new instance of your solver agent.
      * 
@@ -33,7 +33,6 @@ public class MyAgent implements Agent
         m_Pits = new ArrayList<>();
         m_PotentialPits = new ArrayList<>();
         m_PotentialWumpus = new ArrayList<>();
-        m_WumpusPos = new Position(-1, -1);
         m_MoveQueue = new ArrayList<>();
         m_PrevPos = new ArrayList<>();
         w = world;
@@ -146,13 +145,23 @@ public class MyAgent implements Agent
         //If we have reached our destination or spent to many turns looking for it
         //remove it from the list so we can get a new one.
         if(!m_MoveQueue.isEmpty())
-            if(pos.equals(m_MoveQueue.get(0)) || turns > 8)
+        {
+            if(pos.equals(m_MoveQueue.get(0)))
             {
-                turns = 0;
+                m_turns = 0;
                 m_MoveQueue.remove(0);
                 m_PrevPos.clear();
+                m_notReachDest = 0;
             }
-            
+            else if(m_turns > 6)
+            {
+                m_turns = 0;
+                m_MoveQueue.remove(0);
+                m_PrevPos.clear();
+                m_notReachDest++;
+            }
+        }
+        
         if(explore(pos))
             return;
         
@@ -188,7 +197,16 @@ public class MyAgent implements Agent
             //on finding a new destination.
             while(i < 5000)
             {
-                Position dest = new Position(randInt(1, 4), randInt(1, 4));
+                Position dest;
+                if(first)
+                {
+                    dest = new Position(randInt(2, 4), randInt(2, 4));
+                    first = false;
+                }
+                else
+                    dest = new Position(randInt(1, 4), randInt(1, 4));
+                
+                
                 if(w.isUnknown(dest) && !checkIfPotentialHazard(dest))
                 {
                     m_MoveQueue.add(dest);
@@ -211,7 +229,9 @@ public class MyAgent implements Agent
         }
         
         //Calculate which direction is needed to get to goal destination.
-        int dir = calcDir(p_Pos, m_MoveQueue.get(0));
+        int dir = -1;
+        if(!m_MoveQueue.isEmpty())
+            dir = calcDir(p_Pos, m_MoveQueue.get(0));
         
         //No direction was found.
         if(dir == -1)
@@ -232,7 +252,7 @@ public class MyAgent implements Agent
         if(w.getDirection() == p_Dir)
         {
             w.doAction(World.A_MOVE);
-            turns++;
+            m_turns++;
             return true;
         }
         else
@@ -331,7 +351,10 @@ public class MyAgent implements Agent
                 return availableDir.get(randInt(0, availableDir.size() - 1));
         }
         else
-        {    
+        {   
+            if(m_notReachDest > 1)
+                return takeRisk(p_PlayerPos);
+            
             if(w.isVisited(p_PlayerPos.left()) && !checkIfPotentialHazard(p_PlayerPos.left()))
                 availableDir.add(World.DIR_LEFT);
             if(w.isVisited(p_PlayerPos.right()) && !checkIfPotentialHazard(p_PlayerPos.right()))
@@ -349,36 +372,42 @@ public class MyAgent implements Agent
                     return availableDir.get(randInt(0, availableDir.size() - 1));
             }
             else
-            {
-                if(m_PotentialPits.contains(p_PlayerPos.left()))
-                    availableDir.add(World.DIR_LEFT);
-                if(m_PotentialPits.contains(p_PlayerPos.right()))
-                    availableDir.add(World.DIR_RIGHT);
-                if(m_PotentialPits.contains(p_PlayerPos.up()))
-                    availableDir.add(World.DIR_UP);
-                if(m_PotentialPits.contains(p_PlayerPos.down()))
-                    availableDir.add(World.DIR_DOWN);
-
-                force = false;
-
-                if(!availableDir.isEmpty())
-                {
-                    System.out.println("Can't find a safe direction, taking a risk!");
-                    if(availableDir.contains(w.getDirection()) && turns > 0)
-                        return w.getDirection();
-                    else
-                        return availableDir.get(randInt(0, availableDir.size() - 1));
-                }
-                else
-                {
-                    System.out.println("Can't find a direction!");
-                    return -1;
-                }
-            }
+                return takeRisk(p_PlayerPos);
         }
     }   
         
 
+    
+    private int takeRisk(Position p_PlayerPos)
+    {
+        ArrayList<Integer> availableDir = new ArrayList<>();
+        
+        if(m_PotentialPits.contains(p_PlayerPos.left()))
+            availableDir.add(World.DIR_LEFT);
+        if(m_PotentialPits.contains(p_PlayerPos.right()))
+            availableDir.add(World.DIR_RIGHT);
+        if(m_PotentialPits.contains(p_PlayerPos.up()))
+            availableDir.add(World.DIR_UP);
+        if(m_PotentialPits.contains(p_PlayerPos.down()))
+            availableDir.add(World.DIR_DOWN);
+
+        if(!availableDir.isEmpty())
+        {
+            System.out.println("Can't find a safe direction, taking a risk!");
+            if(availableDir.contains(w.getDirection()) && m_turns > 0)
+            {
+                m_notReachDest = 0;
+                return w.getDirection();
+            }
+            else
+                return availableDir.get(randInt(0, availableDir.size() - 1));
+        }
+        else
+        {
+            System.out.println("Can't find a direction!");
+            return -1;
+        } 
+    }
     
     private void addPits(Position p_Pos)
     {
@@ -429,18 +458,6 @@ public class MyAgent implements Agent
         return false;
     }
     
-    private boolean checkIfHazard(Position p_Pos)
-    {
-        if(!w.isValidPosition(p_Pos))
-            return true;
-        
-        if(m_Pits.contains(p_Pos))
-               return true;
-                
-        return false;
-    }
-    
-    
     
     private int locateWumpus(Position p_Pos)
     {
@@ -448,25 +465,21 @@ public class MyAgent implements Agent
         {
             if(p_Pos.equals(p.right()))
             {
-                m_WumpusPos = p;
                 m_PotentialPits.remove(p);
                 return World.DIR_LEFT;
             }
             if(p_Pos.equals(p.left()))
             {
-                m_WumpusPos = p;
                 m_PotentialPits.remove(p);
                 return World.DIR_RIGHT;
             }
             if(p_Pos.equals(p.up()))
             {
-                m_WumpusPos = p;
                 m_PotentialPits.remove(p);
                 return World.DIR_DOWN;
             }
             if(p_Pos.equals(p.down()))
             {
-                m_WumpusPos = p;
                 m_PotentialPits.remove(p);
                 return World.DIR_UP;
             }
@@ -505,6 +518,10 @@ public class MyAgent implements Agent
                     invalidPits.add(p);
                     continue;
                 }
+            
+            if(w.isVisited(p))
+                if(!w.hasPit(p))
+                    invalidPits.add(p);
         }
         for(int i = 0; i < invalidPits.size(); i++)
         {
@@ -579,6 +596,9 @@ public class MyAgent implements Agent
                     invalidWumpus.add(p);
                     continue;
                 }
+            if(w.isVisited(p))
+                if(!w.hasWumpus(p))
+                    invalidWumpus.add(p);
         }
         for(int i = 0; i < invalidWumpus.size(); i++)
         {
